@@ -21,22 +21,25 @@ fromNonTerminal (S, M0) = M
 fromNonTerminal (S, V0) = V
 fromNonTerminal x       = None
 
-ckyInit :: [Char] -> [[[(Grammar, (Int, (Int, (Int, Int))))]]]
+type Info = (Grammar, (Int, (Int, (Int, Int))))
+type Table = [[[Info]]]
+
+ckyInit :: [Char] -> Table
 ckyInit xs = terminals ++ cky terminals (size - 1)
     where terminals = map (\x -> map (\y -> zip y (zip list (zip list (zip list list)))) x) [map (\x -> [fromTerminal x]) xs]
           size      = length xs
           list      = [0,0..size]
 
-cky :: [[[(Grammar, (Int, (Int, (Int, Int))))]]] -> Int -> [[[(Grammar, (Int, (Int, (Int, Int))))]]]
+cky :: Table -> Int -> Table
 cky xs 0 = []
 cky xs n = line ++ cky (xs ++ line) (n - 1)
     where line = ckyLine xs n
 
-ckyLine :: [[[(Grammar, (Int, (Int, (Int, Int))))]]] -> Int -> [[[(Grammar, (Int, (Int, (Int, Int))))]]]
+ckyLine :: Table -> Int -> Table
 ckyLine (x:xs) n = [concat [ckyFind (x:xs) n k | k <- [0..n - 1]]]
 
-ckyFind :: [[[(Grammar, (Int, (Int, (Int, Int))))]]] -> Int -> Int -> [[(Grammar, (Int, (Int, (Int, Int))))]]
-ckyFind (y:ys) n k = [concat [concat [[(fromNonTerminal (choice1', choice2''), (index1 - 1, (k, (size - n - index1, index2))))] | let choice2 = fst (lines !! (size - n - index1)), (choice2', index2) <- zip choice2 [1..], let choice2'' = getFirstSymbol choice2', index2 > k, let result = fromNonTerminal (choice1', choice2''), result /= None] | c <- lines, let (choice1, index1) = ((fst c) !! k, snd c), let choice1' = getFirstSymbol choice1]]
+ckyFind :: Table -> Int -> Int -> [[Info]]
+ckyFind (y:ys) n k = [concat [concat [[(fromNonTerminal (choice1', choice2''), (index1 - 1, (k, (size - n - index1, index2 - 1))))] | let choice2 = fst (lines !! (size - n - index1)), (choice2', index2) <- zip choice2 [1..], let choice2'' = getFirstSymbol choice2', index2 > k, let result = fromNonTerminal (choice1', choice2''), result /= None] | c <- lines, let (choice1, index1) = ((fst c) !! k, snd c), let choice1' = getFirstSymbol choice1]]
     where lines = zip (x:xs) [1..]
           size  = length x
           (x:xs) = map (map (map (fst))) (y:ys)
@@ -44,30 +47,35 @@ ckyFind (y:ys) n k = [concat [concat [[(fromNonTerminal (choice1', choice2''), (
           getFirstSymbol []     = None
           getFirstSymbol (x:xs) = x
 
-simplifyParsingTable :: [[[(Grammar, (Int, (Int, (Int, Int))))]]] -> [[[(Grammar, (Int, (Int, (Int, Int))))]]]
+simplifyParsingTable :: Table -> Table
 simplifyParsingTable []     = []
 simplifyParsingTable [x]    = ((map (\y -> getFirstInitialSymbol y) x)):[]
 simplifyParsingTable (x:xs) = x:simplifyParsingTable xs
 
-getFirstInitialSymbol :: [(Grammar, (Int, (Int, (Int, Int))))] -> [(Grammar, (Int, (Int, (Int, Int))))]
+getFirstInitialSymbol :: [Info] -> [Info]
 getFirstInitialSymbol []             = []
 getFirstInitialSymbol (x:xs) | fst x == initialSymbol = [x]
                              | otherwise              = getFirstInitialSymbol xs
     where initialSymbol = S
 
-checkParsingSuccess :: [[[(Grammar, (Int, (Int, (Int, Int))))]]] -> Bool
+checkParsingSuccess :: Table -> Bool
 checkParsingSuccess [] = False
 checkParsingSuccess xs = or (map (any (\x -> (fst x) == S)) (last xs))
 
-getTreeHead :: [[[(Grammar, (Int, (Int, (Int, Int))))]]] -> (Grammar, (Int, (Int, (Int, Int))))
+getTreeHead :: Table -> Info
 getTreeHead [] = (None, (0, (0, (0, 0))))
 getTreeHead xs = head $ head $ symbol
     where symbol = last xs
 
-findSymbols :: [[[(Grammar, (Int, (Int, (Int, Int))))]]] -> Int -> Int -> Int -> Int -> ((Grammar, (Int, (Int, (Int, Int)))), (Grammar, (Int, (Int, (Int, Int)))))
+findSymbols :: Table -> Int -> Int -> Int -> Int -> (Info, Info)
 findSymbols xs n k n' m = (head ((xs !! n) !! k), head ((xs !! n') !! m))
 
-convertToTree :: [[[(Grammar, (Int, (Int, (Int, Int))))]]] -> (Grammar, (Int, (Int, (Int, Int)))) -> Tree
+convertToTree :: Table -> Info -> Tree
 convertToTree xs (g, (0, (0, (0, 0)))) = Leaf g
 convertToTree xs (g, (n, (k, (n', m)))) = Node g (convertToTree xs (fst symbols)) (convertToTree xs (snd symbols))
     where symbols = findSymbols xs n k n' m
+
+ckyTree :: [Char] -> Tree
+ckyTree xs = convertToTree table head
+    where table = simplifyParsingTable $ ckyInit xs
+          head  = getTreeHead table
