@@ -33,6 +33,9 @@ ckyLine :: [[[Grammar]]] -> Int -> [[[Grammar]]]
 ckyLine (x:xs) n = [concat [ckyFind (x:xs) n k | k <- [0..n - 1]]]
 
 ckyFind :: [[[Grammar]]] -> Int -> Int -> [[Grammar]]
-ckyFind (x:xs) n k = [concat [concat [fromNonTerminal (choice1', choice2'') | let choice2 = fst (lines !! (size - n - index1)), (choice2', index2) <- zip choice2 [0..], choice2'' <- choice2', index2 > k] | c <- lines, let (choice1, index1) = ((fst c) !! k, snd c), choice1' <- choice1]]
+ckyFind (x:xs) n k = [concat [concat [fromNonTerminal (choice1', choice2'') | let choice2 = fst (lines !! (size - n - index1)), (choice2', index2) <- zip choice2 [0..], let choice2'' = getFirstSymbol choice2', index2 > k] | c <- lines, let (choice1, index1) = ((fst c) !! k, snd c), let choice1' = getFirstSymbol choice1]]
     where lines = zip (x:xs) [1..]
           size  = length x
+          getFirstSymbol :: [Grammar] -> Grammar
+          getFirstSymbol []     = Error
+          getFirstSymbol (x:xs) = x
