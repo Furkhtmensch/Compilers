@@ -1,2 +1,3 @@
 # Compilers
-Compilers in Haskell
+Compilers made in Haskell. 
+Main Project: Parallello (temporary name)
