@@ -13,13 +13,13 @@ $comp"="|$comp          { \pos s -> COMP pos s }
 $arit                   { \pos s -> ARIT pos s }
 $digit+                 { \pos s -> NUM pos (read s) }
 $digit+"."$digit+       { \pos s -> REAL pos (read s) }
-{                       { \pos _ -> LBRACK pos }
-}                       { \pos _ -> RBRACK pos }
-;                       { \pos _ -> SEMI pos }
-,                       { \pos _ -> COMMA pos }
-(                       { \pos _ -> LPARA pos }
-)                       { \pos _ -> RPARA pos }
-=                       { \pos _ -> ASSIGN pos }
+"{"                     { \pos _ -> LBRACK pos }
+"}"                     { \pos _ -> RBRACK pos }
+";"                     { \pos _ -> SEMI pos }
+","                     { \pos _ -> COMMA pos }
+"("                     { \pos _ -> LPARA pos }
+")"                     { \pos _ -> RPARA pos }
+"="                     { \pos _ -> ASSIGN pos }
 if                      { \pos _ -> IF pos }
 else                    { \pos _ -> ELSE pos }
 while                   { \pos _ -> WHILE pos }
@@ -49,3 +49,4 @@ data Token = COMP AlexPosn [Char]
            | ID AlexPosn [Char]
     deriving (Eq,Show)
 }
+
